@@ -1,5 +1,5 @@
 {
-  "name": "cooking-helper-temp",
+  "name": "cooking-helper",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,9 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.85.0",
+    "@supabase/supabase-js": "^2.102.0",
+    "dotenv": "^17.4.1",
     "next": "16.2.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

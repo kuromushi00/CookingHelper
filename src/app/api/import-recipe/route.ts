@@ -127,7 +127,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'レシピの解析に失敗しました' }, { status: 500 });
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    // Fix common JSON issues: unquoted values like 大さじ1
+    let jsonStr = jsonMatch[0];
+    // Fix: "amount": 大さじ1 → "amount": 1 (move unit text to unit field is handled by AI, but fix parse)
+    jsonStr = jsonStr.replace(/"amount"\s*:\s*([^"\d\s\[][^\s,}\]]*)/g, '"amount": 0');
+    // Fix: trailing commas before } or ]
+    jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1');
+
+    let result;
+    try {
+      result = JSON.parse(jsonStr);
+    } catch {
+      // If greedy regex captured too much, try extracting the first balanced JSON object
+      let depth = 0;
+      let end = -1;
+      for (let i = 0; i < jsonStr.length; i++) {
+        if (jsonStr[i] === '{') depth++;
+        else if (jsonStr[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+      }
+      if (end > 0) {
+        result = JSON.parse(jsonStr.slice(0, end));
+      } else {
+        return NextResponse.json({ error: 'レシピの解析に失敗しました' }, { status: 500 });
+      }
+    }
+
+    // If AI returned a collection page with multiple recipes, extract the first one
+    if (result.recipes && Array.isArray(result.recipes) && result.recipes.length > 0 && !result.ingredients) {
+      const first = result.recipes[0];
+      result = {
+        name: first.recipeName || first.name || '',
+        type: first.type || 'main',
+        cuisine: first.cuisine || 'japanese',
+        servings: first.servings || 2,
+        ingredients: Array.isArray(first.ingredients)
+          ? first.ingredients.map((ing: string | { name: string; amount?: number; unit?: string; category?: string }) =>
+              typeof ing === 'string'
+                ? { name: ing, amount: 0, unit: '', category: 'その他' }
+                : { name: ing.name, amount: ing.amount ?? 0, unit: ing.unit ?? '', category: ing.category ?? 'その他' }
+            )
+          : [],
+        memo: first.memo || first.source || '',
+      };
+    }
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('import-recipe error:', error);

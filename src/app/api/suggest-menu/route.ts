@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
           content: `あなたは家庭料理の献立アドバイザーです。
 1週間分の夕食献立を提案してください。各日にメイン料理1品、スープ/汁物1品、副菜1品を提案してください。
 
-## 使用可能なレシピ一覧
+## 使用可能なレシピ一覧（カッコ内は種類）
 ${recipeNames.join(', ')}
 
 ## 前週の献立（重複を避けてください）
@@ -26,7 +26,7 @@ ${previousWeekMenuNames.length > 0 ? previousWeekMenuNames.join(', ') : 'なし'
 ${servings}人前
 
 ## ルール
-- 使用可能なレシピ一覧から選んでください
+- 使用可能なレシピ一覧から選んでください。レシピ名はカッコ部分を除いた名前のみを返してください（例: "肉じゃが(main)" → "肉じゃが"）
 - 一覧にないレシピを提案する場合は、レシピ名の後に「(新規)」を付けてください
 - 和洋中のバランスを考慮してください
 - 同じ食材が続かないようにしてください
@@ -49,8 +49,10 @@ ${servings}人前
     });
 
     const text = message.content[0].type === 'text' ? message.content[0].text : '';
+    console.log('AI response text:', text);
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
+      console.error('Failed to parse JSON from AI response:', text);
       return NextResponse.json({ error: 'AI応答の解析に失敗しました' }, { status: 500 });
     }
 

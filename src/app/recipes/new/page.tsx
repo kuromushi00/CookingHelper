@@ -38,6 +38,63 @@ export default function NewRecipePage() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
   const [importingImage, setImportingImage] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ title: string; url: string; snippet: string }[]>([]);
+  const [searchMessage, setSearchMessage] = useState('');
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    setSearchResults([]);
+    setSearchMessage('');
+    setImportError('');
+    try {
+      const res = await fetch('/api/search-recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery.trim() }),
+      });
+      if (!res.ok) throw new Error('検索に失敗しました');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setSearchResults(data.results || []);
+      if (data.results?.length === 0) {
+        setSearchMessage(data.message || 'レシピが見つかりませんでした');
+      }
+    } catch (err) {
+      setSearchMessage(err instanceof Error ? err.message : '検索に失敗しました');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = async (url: string) => {
+    setImporting(true);
+    setImportError('');
+    setSearchResults([]);
+    setSearchQuery('');
+    try {
+      const res = await fetch('/api/import-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) throw new Error('レシピの取り込みに失敗しました');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      setName(data.name || '');
+      setType(data.type || 'main');
+      setCuisine(data.cuisine || 'japanese');
+      setServings(data.servings || 2);
+      setIngredients(data.ingredients || []);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'エラーが発生しました');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleImportImage = async (file: File) => {
     setImportingImage(true);
@@ -159,6 +216,66 @@ export default function NewRecipePage() {
       />
 
       <div className="px-4 py-4 space-y-4">
+        {/* Recipe Search by Message */}
+        <div className="bg-blue-50 rounded-xl p-4">
+          <label className="block text-sm font-bold text-blue-700 mb-2">作りたい料理を伝えてレシピを探す</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSearch(); }}
+              placeholder="例: 鶏肉の簡単な料理、子どもが喜ぶ魚料理"
+              className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={handleSearch}
+              disabled={searching || !searchQuery.trim()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium disabled:opacity-50 whitespace-nowrap"
+            >
+              {searching ? '検索中...' : '検索'}
+            </button>
+          </div>
+
+          {searchMessage && (
+            <p className="text-gray-500 text-xs mt-2">{searchMessage}</p>
+          )}
+
+          {searching && (
+            <div className="flex items-center gap-2 mt-3 text-blue-600 text-sm">
+              <span className="animate-spin inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" />
+              Webからレシピを探しています...
+            </div>
+          )}
+
+          {importing && searchResults.length === 0 && (
+            <div className="flex items-center gap-2 mt-3 text-blue-600 text-sm">
+              <span className="animate-spin inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" />
+              レシピを取り込んでいます...
+            </div>
+          )}
+
+          {searchResults.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs text-blue-600 font-medium">タップしてレシピを取り込み</p>
+              {searchResults.map((result, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSelectSearchResult(result.url)}
+                  disabled={importing}
+                  className="w-full text-left bg-white rounded-lg p-3 shadow-sm border border-blue-100 active:bg-blue-50 disabled:opacity-50 transition"
+                >
+                  <p className="font-medium text-gray-900 text-sm leading-snug">{result.title}</p>
+                  {result.snippet && (
+                    <p className="text-gray-500 text-xs mt-1 line-clamp-2">{result.snippet}</p>
+                  )}
+                  <p className="text-blue-400 text-xs mt-1 truncate">{(() => { try { return new URL(result.url).hostname; } catch { return result.url; } })()}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Image Import */}
         <div className="bg-green-50 rounded-xl p-4">
           <label className="block text-sm font-bold text-green-700 mb-2">写真からレシピを取り込む</label>

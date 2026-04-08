@@ -60,27 +60,42 @@ export default function Home() {
     }
   };
 
+  const findRecipe = (name: string) => {
+    // まず完全一致を試す
+    const exact = recipes.find((r) => r.name === name);
+    if (exact) return exact;
+    // AIが「(type)」付きで返した場合に対応
+    const stripped = name.replace(/\((?:main|soup|side|新規)\)$/, '').trim();
+    return recipes.find((r) => r.name === stripped) ?? null;
+  };
+
   const handleAcceptSuggestion = async () => {
     if (!aiSuggestion) return;
     setAiLoading(true);
+    setAiError('');
 
-    for (const daySugg of aiSuggestion.days) {
-      const mainRecipe = recipes.find((r) => r.name === daySugg.main);
-      const soupRecipe = recipes.find((r) => r.name === daySugg.soup);
-      const sideRecipes = daySugg.sides
-        .map((name) => recipes.find((r) => r.name === name))
-        .filter(Boolean);
+    try {
+      for (const daySugg of aiSuggestion.days) {
+        const mainRecipe = findRecipe(daySugg.main);
+        const soupRecipe = findRecipe(daySugg.soup);
+        const sideRecipes = daySugg.sides
+          .map((name) => findRecipe(name))
+          .filter(Boolean);
 
-      await setMeal(daySugg.day as DayOfWeek, {
-        main_recipe_id: mainRecipe?.id ?? null,
-        soup_recipe_id: soupRecipe?.id ?? null,
-        side_recipe_ids: sideRecipes.map((r) => r!.id),
-      });
+        await setMeal(daySugg.day as DayOfWeek, {
+          main_recipe_id: mainRecipe?.id ?? null,
+          soup_recipe_id: soupRecipe?.id ?? null,
+          side_recipe_ids: sideRecipes.map((r) => r!.id),
+        });
+      }
+
+      setAiSuggestion(null);
+      await refetchMenu();
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : '献立の保存に失敗しました');
+    } finally {
+      setAiLoading(false);
     }
-
-    setAiSuggestion(null);
-    setAiLoading(false);
-    await refetchMenu();
   };
 
   return (
@@ -94,7 +109,7 @@ export default function Home() {
         {/* AI Suggestion Button */}
         <button
           onClick={handleAISuggest}
-          disabled={aiLoading}
+          disabled={aiLoading || recipes.length === 0}
           className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2"
         >
           {aiLoading ? (
@@ -111,6 +126,10 @@ export default function Home() {
             </>
           )}
         </button>
+
+        {recipes.length === 0 && (
+          <p className="text-center text-sm text-gray-400">レシピを登録するとAIが献立を提案できます</p>
+        )}
 
         {aiError && (
           <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{aiError}</div>

@@ -37,6 +37,63 @@ export default function NewRecipePage() {
   const [importUrl, setImportUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
+  const [importingImage, setImportingImage] = useState(false);
+
+  const handleImportImage = async (file: File) => {
+    setImportingImage(true);
+    setImportError('');
+    try {
+      // Resize image to reduce payload size
+      const resized = await resizeImage(file, 1200);
+      const res = await fetch('/api/import-recipe-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: resized.base64, mediaType: resized.mediaType }),
+      });
+      if (!res.ok) throw new Error('画像の取り込みに失敗しました');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      setName(data.name || '');
+      setType(data.type || 'main');
+      setCuisine(data.cuisine || 'japanese');
+      setServings(data.servings || 2);
+      setIngredients(data.ingredients || []);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'エラーが発生しました');
+    } finally {
+      setImportingImage(false);
+    }
+  };
+
+  const resizeImage = (file: File, maxWidth: number): Promise<{ base64: string; mediaType: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const base64 = dataUrl.split(',')[1];
+          resolve({ base64, mediaType: 'image/jpeg' });
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleImportUrl = async () => {
     if (!importUrl.trim()) return;
@@ -102,6 +159,35 @@ export default function NewRecipePage() {
       />
 
       <div className="px-4 py-4 space-y-4">
+        {/* Image Import */}
+        <div className="bg-green-50 rounded-xl p-4">
+          <label className="block text-sm font-bold text-green-700 mb-2">写真からレシピを取り込む</label>
+          <div className="flex gap-2">
+            <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-green-300 rounded-lg cursor-pointer hover:bg-green-100 transition ${importingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-sm font-medium text-green-700">
+                {importingImage ? '読み取り中...' : '写真を撮る / 選択'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImportImage(file);
+                  e.target.value = '';
+                }}
+                disabled={importingImage}
+              />
+            </label>
+          </div>
+          {importingImage && <p className="text-green-600 text-xs mt-2">画像を解析しています...</p>}
+        </div>
+
         {/* URL Import */}
         <div className="bg-purple-50 rounded-xl p-4">
           <label className="block text-sm font-bold text-purple-700 mb-2">URLからレシピを取り込む</label>

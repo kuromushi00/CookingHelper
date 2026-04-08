@@ -3,3 +3,21 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
 }
+
+/* Safe area support for notched devices */
+html {
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Smooth scrolling & prevent overscroll bounce */
+html, body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better touch targets for form elements */
+input, select, textarea, button {
+  font-size: 16px; /* Prevent iOS zoom on focus */
+}

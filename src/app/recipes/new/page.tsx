@@ -267,47 +267,51 @@ export default function NewRecipePage() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">材料</label>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {ingredients.map((ing, i) => (
-              <div key={i} className="flex gap-1 items-center">
-                <input
-                  type="text"
-                  placeholder="名前"
-                  value={ing.name}
-                  onChange={(e) => updateIngredient(i, 'name', e.target.value)}
-                  className="flex-1 px-2 py-1.5 border rounded text-sm"
-                />
-                <input
-                  type="number"
-                  placeholder="量"
-                  value={ing.amount || ''}
-                  onChange={(e) => updateIngredient(i, 'amount', parseFloat(e.target.value) || 0)}
-                  className="w-16 px-2 py-1.5 border rounded text-sm"
-                />
-                <input
-                  type="text"
-                  placeholder="単位"
-                  value={ing.unit}
-                  onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
-                  className="w-16 px-2 py-1.5 border rounded text-sm"
-                />
-                <select
-                  value={ing.category}
-                  onChange={(e) => updateIngredient(i, 'category', e.target.value)}
-                  className="w-24 px-1 py-1.5 border rounded text-xs"
-                >
-                  {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+              <div key={i} className="bg-gray-50 rounded-lg p-3 relative">
                 <button
                   onClick={() => {
                     const newIngredients = [...ingredients];
                     newIngredients.splice(i, 1);
                     setIngredients(newIngredients);
                   }}
-                  className="text-red-400 text-lg px-1"
+                  className="absolute top-1 right-1 text-gray-400 w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-200 text-lg"
                 >
                   ×
                 </button>
+                <div className="flex gap-2 mb-2 pr-7">
+                  <input
+                    type="text"
+                    placeholder="材料名"
+                    value={ing.name}
+                    onChange={(e) => updateIngredient(i, 'name', e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder="量"
+                    value={ing.amount || ''}
+                    onChange={(e) => updateIngredient(i, 'amount', parseFloat(e.target.value) || 0)}
+                    className="w-20 px-3 py-2 border rounded-lg text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="単位"
+                    value={ing.unit}
+                    onChange={(e) => updateIngredient(i, 'unit', e.target.value)}
+                    className="w-20 px-3 py-2 border rounded-lg text-sm"
+                  />
+                  <select
+                    value={ing.category}
+                    onChange={(e) => updateIngredient(i, 'category', e.target.value)}
+                    className="flex-1 px-2 py-2 border rounded-lg text-sm"
+                  >
+                    {categoryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
               </div>
             ))}
           </div>

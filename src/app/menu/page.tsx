@@ -83,12 +83,12 @@ export default function MenuPage() {
       <Header title="献立" />
 
       {/* Week selector */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={() => setWeekOffset(weekOffset - 1)} className="text-orange-500 text-lg px-2">&lt;</button>
+      <div className="flex items-center justify-between px-2 py-2">
+        <button onClick={() => setWeekOffset(weekOffset - 1)} className="text-orange-500 text-lg w-11 h-11 flex items-center justify-center rounded-full active:bg-orange-50">&lt;</button>
         <span className="text-sm font-medium text-gray-700">
           {formatDate(weekStart)} 〜 {formatDate(getWeekEndDate(weekStart))}
         </span>
-        <button onClick={() => setWeekOffset(weekOffset + 1)} className="text-orange-500 text-lg px-2">&gt;</button>
+        <button onClick={() => setWeekOffset(weekOffset + 1)} className="text-orange-500 text-lg w-11 h-11 flex items-center justify-center rounded-full active:bg-orange-50">&gt;</button>
       </div>
 
       {/* Days */}
@@ -120,7 +120,7 @@ export default function MenuPage() {
                       <span className="text-xs text-orange-500 mr-1">メイン</span>
                       {mainRecipe.name}
                     </span>
-                    <button onClick={() => handleRemove(day, 'main')} className="text-gray-400 text-sm">×</button>
+                    <button onClick={() => handleRemove(day, 'main')} className="text-gray-400 text-lg w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">×</button>
                   </div>
                 ) : (
                   <button
@@ -139,7 +139,7 @@ export default function MenuPage() {
                         <span className="text-xs text-yellow-600 mr-1">スープ</span>
                         {soupRecipe.name}
                       </span>
-                      <button onClick={() => handleRemove(day, 'soup')} className="text-gray-400 text-sm">×</button>
+                      <button onClick={() => handleRemove(day, 'soup')} className="text-gray-400 text-lg w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">×</button>
                     </div>
                   ) : (
                     <div>
@@ -175,7 +175,7 @@ export default function MenuPage() {
                           <span className="text-xs text-green-600 mr-1">副菜</span>
                           {side.name}
                         </span>
-                        <button onClick={() => handleRemove(day, 'side', side.id)} className="text-gray-400 text-sm">×</button>
+                        <button onClick={() => handleRemove(day, 'side', side.id)} className="text-gray-400 text-lg w-8 h-8 flex items-center justify-center rounded-full active:bg-gray-100">×</button>
                       </div>
                     ))}
                     <div>
@@ -212,35 +212,39 @@ export default function MenuPage() {
 
       {/* Picker Modal */}
       {pickerOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-          <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl max-h-[70vh] flex flex-col">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end" onClick={() => { setPickerOpen(null); setPickerSearch(''); }}>
+          <div className="bg-white w-full max-w-lg mx-auto rounded-t-2xl max-h-[75vh] flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-medium">
+              <h3 className="font-medium text-base">
                 {pickerOpen.slot === 'main' ? 'メイン' : pickerOpen.slot === 'soup' ? 'スープ' : '副菜'}を選択
               </h3>
-              <button onClick={() => { setPickerOpen(null); setPickerSearch(''); }} className="text-gray-400 text-lg">×</button>
+              <button onClick={() => { setPickerOpen(null); setPickerSearch(''); }} className="text-gray-400 text-xl w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100">×</button>
             </div>
-            <div className="px-4 py-2">
+            <div className="px-4 py-3">
               <input
                 type="text"
                 placeholder="検索..."
                 value={pickerSearch}
                 onChange={(e) => setPickerSearch(e.target.value)}
-                className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm"
+                className="w-full px-3 py-2.5 bg-gray-100 rounded-lg text-sm"
                 autoFocus
               />
             </div>
-            <div className="overflow-y-auto flex-1 px-4 pb-4">
-              {getPickerRecipes().map((recipe) => (
-                <button
-                  key={recipe.id}
-                  onClick={() => handleSelect(recipe)}
-                  className="w-full text-left py-3 border-b border-gray-100 last:border-0"
-                >
-                  <p className="text-sm font-medium text-gray-900">{recipe.name}</p>
-                  <p className="text-xs text-gray-500">{recipe.servings}人前</p>
-                </button>
-              ))}
+            <div className="overflow-y-auto flex-1 overscroll-contain px-4 pb-4">
+              {getPickerRecipes().length === 0 ? (
+                <p className="text-center py-8 text-gray-400 text-sm">レシピがありません</p>
+              ) : (
+                getPickerRecipes().map((recipe) => (
+                  <button
+                    key={recipe.id}
+                    onClick={() => handleSelect(recipe)}
+                    className="w-full text-left py-3.5 border-b border-gray-100 last:border-0 active:bg-gray-50"
+                  >
+                    <p className="text-sm font-medium text-gray-900">{recipe.name}</p>
+                    <p className="text-xs text-gray-500">{recipe.servings}人前</p>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>

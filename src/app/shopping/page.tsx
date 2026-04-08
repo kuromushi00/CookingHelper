@@ -130,7 +130,7 @@ export default function ShoppingPage() {
                     <button
                       key={item.id}
                       onClick={() => toggleItem(item.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50"
                     >
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                         item.checked ? 'bg-orange-500 border-orange-500' : 'border-gray-300'

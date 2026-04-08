@@ -37,7 +37,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm">
             <button
               onClick={() => updateDefaultServings(Math.max(1, defaultServings - 1))}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold text-lg active:bg-gray-200"
             >
               -
             </button>
@@ -46,7 +46,7 @@ export default function SettingsPage() {
             </span>
             <button
               onClick={() => updateDefaultServings(defaultServings + 1)}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 font-bold"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-orange-100 text-orange-600 font-bold text-lg active:bg-orange-200"
             >
               +
             </button>
@@ -69,18 +69,18 @@ export default function SettingsPage() {
               <div key={cat} className="flex items-center px-4 py-3">
                 <span className="text-xs text-gray-400 w-6">{index + 1}</span>
                 <span className="flex-1 text-sm text-gray-900">{cat}</span>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   <button
                     onClick={() => moveItem(index, 'up')}
                     disabled={index === 0}
-                    className="w-7 h-7 flex items-center justify-center rounded bg-gray-100 text-gray-500 disabled:opacity-30"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 disabled:opacity-30 active:bg-gray-200"
                   >
                     ↑
                   </button>
                   <button
                     onClick={() => moveItem(index, 'down')}
                     disabled={index === categoryOrder.length - 1}
-                    className="w-7 h-7 flex items-center justify-center rounded bg-gray-100 text-gray-500 disabled:opacity-30"
+                    className="w-10 h-10 flex items-center justify-center rounded-lg bg-gray-100 text-gray-500 disabled:opacity-30 active:bg-gray-200"
                   >
                     ↓
                   </button>

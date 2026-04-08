@@ -182,13 +182,13 @@ export default function Home() {
         <div className="flex gap-3">
           <Link
             href="/menu"
-            className="flex-1 py-3 bg-orange-500 text-white text-center rounded-xl font-medium hover:bg-orange-600"
+            className="flex-1 py-3 bg-orange-500 text-white text-center rounded-xl font-medium active:bg-orange-600"
           >
             献立を編集
           </Link>
           <Link
             href="/shopping"
-            className="flex-1 py-3 bg-white text-orange-500 text-center rounded-xl font-medium border border-orange-500 hover:bg-orange-50"
+            className="flex-1 py-3 bg-white text-orange-500 text-center rounded-xl font-medium border border-orange-500 active:bg-orange-50"
           >
             買い物リスト
           </Link>

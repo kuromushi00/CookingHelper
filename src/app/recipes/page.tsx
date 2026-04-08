@@ -75,7 +75,7 @@ export default function RecipesPage() {
             <Link
               key={recipe.id}
               href={`/recipes/${recipe.id}`}
-              className="block bg-white rounded-xl p-4 shadow-sm"
+              className="block bg-white rounded-xl p-4 shadow-sm active:bg-gray-50"
             >
               <div className="flex items-center justify-between">
                 <div>

@@ -257,20 +257,32 @@ export default function NewRecipePage() {
 
           {searchResults.length > 0 && (
             <div className="mt-3 space-y-2">
-              <p className="text-xs text-blue-600 font-medium">タップしてレシピを取り込み</p>
+              <p className="text-xs text-blue-600 font-medium">タップしてレシピを確認 → 気に入ったら取り込み</p>
               {searchResults.map((result, i) => (
-                <button
+                <div
                   key={i}
-                  onClick={() => handleSelectSearchResult(result.url)}
-                  disabled={importing}
-                  className="w-full text-left bg-white rounded-lg p-3 shadow-sm border border-blue-100 active:bg-blue-50 disabled:opacity-50 transition"
+                  className="bg-white rounded-lg p-3 shadow-sm border border-blue-100"
                 >
-                  <p className="font-medium text-gray-900 text-sm leading-snug">{result.title}</p>
-                  {result.snippet && (
-                    <p className="text-gray-500 text-xs mt-1 line-clamp-2">{result.snippet}</p>
-                  )}
-                  <p className="text-blue-400 text-xs mt-1 truncate">{(() => { try { return new URL(result.url).hostname; } catch { return result.url; } })()}</p>
-                </button>
+                  <a
+                    href={result.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block active:bg-blue-50 -m-3 p-3 rounded-lg"
+                  >
+                    <p className="font-medium text-gray-900 text-sm leading-snug">{result.title}</p>
+                    {result.snippet && (
+                      <p className="text-gray-500 text-xs mt-1 line-clamp-2">{result.snippet}</p>
+                    )}
+                    <p className="text-blue-400 text-xs mt-1 truncate">{(() => { try { return new URL(result.url).hostname; } catch { return result.url; } })()}</p>
+                  </a>
+                  <button
+                    onClick={() => handleSelectSearchResult(result.url)}
+                    disabled={importing}
+                    className="mt-2 w-full py-2 bg-blue-500 text-white rounded-lg text-xs font-medium disabled:opacity-50 active:bg-blue-600 transition"
+                  >
+                    {importing ? '取り込み中...' : 'このレシピを取り込む'}
+                  </button>
+                </div>
               ))}
             </div>
           )}

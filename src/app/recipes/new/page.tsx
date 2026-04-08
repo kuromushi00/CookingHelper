@@ -196,7 +196,7 @@ export default function NewRecipePage() {
               type="url"
               value={importUrl}
               onChange={(e) => setImportUrl(e.target.value)}
-              placeholder="https://cookpad.com/recipe/..."
+              placeholder="レシピURL（cookpad, YouTube, Instagram等）"
               className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
             <button
@@ -207,6 +207,12 @@ export default function NewRecipePage() {
               {importing ? '取込中...' : '取り込み'}
             </button>
           </div>
+          {importUrl && /youtube\.com|youtu\.be/.test(importUrl) && (
+            <p className="text-purple-600 text-xs mt-1">YouTube動画の字幕・説明文からレシピを取り込みます</p>
+          )}
+          {importUrl && /instagram\.com/.test(importUrl) && (
+            <p className="text-purple-600 text-xs mt-1">Instagramの投稿からレシピを取り込みます</p>
+          )}
           {importError && <p className="text-red-500 text-xs mt-1">{importError}</p>}
         </div>
 

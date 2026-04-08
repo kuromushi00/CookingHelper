@@ -9,29 +9,38 @@ interface SearchResult {
 }
 
 async function searchRecipes(query: string): Promise<SearchResult[]> {
-  const searchQuery = `${query} レシピ 作り方 材料`;
+  const searchQuery = `${query} レシピ 作り方`;
 
-  // Try DuckDuckGo HTML first, fall back to DuckDuckGo Lite
-  const urls = [
-    `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}&kl=jp-jp`,
-    `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(searchQuery)}&kl=jp-jp`,
+  // DuckDuckGo HTML search via POST (more reliable from server environments)
+  const attempts = [
+    { url: 'https://html.duckduckgo.com/html/', body: `q=${encodeURIComponent(searchQuery)}&kl=jp-jp` },
+    { url: 'https://lite.duckduckgo.com/lite/', body: `q=${encodeURIComponent(searchQuery)}&kl=jp-jp` },
   ];
 
-  for (const url of urls) {
+  for (const attempt of attempts) {
     try {
-      const res = await fetch(url, {
+      const res = await fetch(attempt.url, {
+        method: 'POST',
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
         },
+        body: attempt.body,
       });
 
       if (!res.ok) continue;
 
       const html = await res.text();
-      const results = parseDuckDuckGoResults(html);
+
+      // Try standard HTML format first
+      let results = parseStandardResults(html);
+      if (results.length > 0) return results;
+
+      // Try Lite format
+      results = parseLiteResults(html);
       if (results.length > 0) return results;
     } catch {
       continue;
@@ -41,32 +50,35 @@ async function searchRecipes(query: string): Promise<SearchResult[]> {
   throw new Error('検索に失敗しました。しばらくしてからお試しください。');
 }
 
-function parseDuckDuckGoResults(html: string): SearchResult[] {
-  const results: SearchResult[] = [];
+function isUsefulUrl(url: string): boolean {
+  if (url.includes('duckduckgo.com') || url.includes('google.com')) return false;
+  if (/\/search[\/?]|\/categor|\/video_categories\//.test(url)) return false;
+  return true;
+}
 
-  // Try standard HTML format
+function extractUrl(rawUrl: string): string {
+  const uddgMatch = rawUrl.match(/uddg=([^&]+)/);
+  if (uddgMatch) return decodeURIComponent(uddgMatch[1]);
+  return rawUrl;
+}
+
+function parseStandardResults(html: string): SearchResult[] {
+  const results: SearchResult[] = [];
   const resultBlocks = html.split(/class="result\s/);
-  for (let i = 1; i < resultBlocks.length && results.length < 8; i++) {
+
+  for (let i = 1; i < resultBlocks.length && results.length < 12; i++) {
     const block = resultBlocks[i];
 
     const urlMatch = block.match(/class="result__a"[^>]*href="([^"]+)"/);
     if (!urlMatch) continue;
 
-    let resultUrl = urlMatch[1];
-    const uddgMatch = resultUrl.match(/uddg=([^&]+)/);
-    if (uddgMatch) {
-      resultUrl = decodeURIComponent(uddgMatch[1]);
-    }
-
-    if (resultUrl.includes('duckduckgo.com') || resultUrl.includes('google.com')) continue;
-    if (/\/search[\/?]|\/search\/|\/categor|\/curations\/|\/recipe_list\/|\/series\/|\/ingredients\/|\/video_categories\/|\/keyword:/.test(resultUrl)) continue;
+    const resultUrl = extractUrl(urlMatch[1]);
+    if (!isUsefulUrl(resultUrl)) continue;
 
     const titleMatch = block.match(/class="result__a"[^>]*>([\s\S]*?)<\/a>/);
     const title = titleMatch
       ? titleMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
       : '';
-
-    if (/\d+選|ランキング|Top\d+/i.test(title) && !/作り方|レシピ\//.test(resultUrl)) continue;
 
     const snippetMatch = block.match(/class="result__snippet"[^>]*>([\s\S]*?)<\/(?:a|td|div|span)>/);
     const snippet = snippetMatch
@@ -78,21 +90,34 @@ function parseDuckDuckGoResults(html: string): SearchResult[] {
     }
   }
 
-  // Try Lite format if standard didn't work
-  if (results.length === 0) {
-    const linkMatches = html.matchAll(/<a[^>]+rel="nofollow"[^>]+href="([^"]+)"[^>]*class="result-link"[^>]*>([\s\S]*?)<\/a>/g);
-    for (const m of linkMatches) {
-      if (results.length >= 8) break;
-      let resultUrl = m[1];
-      const uddgMatch = resultUrl.match(/uddg=([^&]+)/);
-      if (uddgMatch) resultUrl = decodeURIComponent(uddgMatch[1]);
-      if (resultUrl.includes('duckduckgo.com')) continue;
+  return results;
+}
 
-      const title = m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-      if (title && resultUrl) {
-        results.push({ title, url: resultUrl, snippet: '' });
-      }
-    }
+function parseLiteResults(html: string): SearchResult[] {
+  const results: SearchResult[] = [];
+
+  // Lite format: links with rel="nofollow" or in table rows
+  const linkPattern = /<a[^>]+href="(\/\/duckduckgo\.com\/l\/\?[^"]+|https?:\/\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  let match;
+  while ((match = linkPattern.exec(html)) !== null && results.length < 12) {
+    let resultUrl = match[1];
+    if (resultUrl.startsWith('//')) resultUrl = 'https:' + resultUrl;
+    resultUrl = extractUrl(resultUrl);
+    if (!isUsefulUrl(resultUrl)) continue;
+
+    const title = match[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    if (!title || title.length < 3) continue;
+    // Skip navigation links
+    if (/^(Next|Previous|Back|\d+)$/.test(title)) continue;
+
+    // Try to find a snippet near this link
+    const afterLink = html.slice(match.index + match[0].length, match.index + match[0].length + 500);
+    const snippetMatch = afterLink.match(/class="[^"]*snippet[^"]*"[^>]*>([\s\S]*?)<\//);
+    const snippet = snippetMatch
+      ? snippetMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+      : '';
+
+    results.push({ title, url: resultUrl, snippet });
   }
 
   return results;
